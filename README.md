@@ -535,7 +535,3 @@ ProyectoFinalDespliegue/
 ```
 
 ---
-
-## Licencia
-
-Proyecto desarrollado con fines educativos para el módulo de Despliegue de Aplicaciones Web — 2º DAW.
