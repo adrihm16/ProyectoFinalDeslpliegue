@@ -1,0 +1,12 @@
+.git
+.gitignore
+docker-compose.yml
+Dockerfile
+.env
+node_modules
+npm-debug.log
+README.md
+vendor
+tests
+composer.json
+composer.lock

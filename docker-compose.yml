@@ -1,0 +1,126 @@
+services:
+  # Servicio Proxy (Nginx)
+  proxy:
+    image: nginx:alpine
+    container_name: blog_proxy
+    ports:
+      - "${PROXY_PORT}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
+      - api
+      - phpmyadmin
+    networks:
+      - frontend_net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Servicio Frontend (imagen de PHP)
+  frontend:
+    build: ./frontend
+    image: adrihm95/microblog-frontend:v1.1
+    environment:
+      # El formato es: NOMBRE_PARA_PHP=${NOMBRE_EN_EL_ENV}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${MYSQL_DATABASE}
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - db
+      - redis
+    networks:
+      - frontend_net
+      - backend_net
+    healthcheck:
+      test: ["CMD-SHELL", "cgi-fcgi -bind -connect 127.0.0.1:9000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Servicio API REST
+  api:
+    build: ./api
+    image: adrihm95/microblog-api:v1.0
+    container_name: blog_api
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${MYSQL_DATABASE}
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+    depends_on:
+      - db
+      - redis
+    networks:
+      - frontend_net
+      - backend_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Servicio de Base de Datos (MariaDB)
+  db:
+    image: mariadb:10.11
+    container_name: blog_db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Servicio de Caché (Redis)
+  redis:
+    image: redis:alpine
+    container_name: blog_redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Servicio de administración de BD
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: blog_pma
+    environment:
+      - PMA_HOST=${PMA_HOST}
+      - PMA_USER=${PMA_USER}
+      - PMA_PASSWORD=${PMA_PASSWORD}
+      - PMA_ABSOLUTE_URI=http://localhost:${PROXY_PORT}/phpmyadmin/
+    depends_on:
+      - db
+    networks:
+      - frontend_net
+      - backend_net
+
+# Definición de Redes y Volúmenes
+networks:
+  frontend_net:
+  backend_net:
+
+volumes:
+  db_data:
+  redis_data:
