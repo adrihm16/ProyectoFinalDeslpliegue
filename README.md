@@ -27,36 +27,7 @@ Se trata de un sistema de blog completo construido con una arquitectura de micro
 ## Arquitectura del sistema
 
 La aplicación sigue una **arquitectura de microservicios** en la que cada componente es un contenedor independiente. Todos se comunican a través de redes internas de Docker y el usuario solo accede a través de Nginx, que actúa como punto de entrada único.
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                      USUARIO                            │
-│                    (navegador)                          │
-└───────────────────────┬─────────────────────────────────┘
-                        │  Puerto 80
-                        ▼
-┌─────────────────────────────────────────────────────────┐
-│                  NGINX (Proxy inverso)                  │
-│               Balanceo de carga + Routing               │
-│                   [frontend_net]                        │
-└──────┬──────────────┬────────────────────┬──────────────┘
-       │              │                    │
-       ▼              ▼                    ▼
-┌────────────┐  ┌───────────┐      ┌──────────────┐
-│  FRONTEND  │  │    API    │      │  phpMyAdmin   │
-│  PHP-FPM   │  │  PHP-CLI  │      │  (Admin BD)   │
-│  :9000     │  │  :8000    │      │              │
-│ x3 réplicas│  │           │      │              │
-└──────┬─────┘  └─────┬─────┘      └──────┬───────┘
-       │              │                    │
-       │   [backend_net]                   │
-       ▼              ▼                    ▼
-┌────────────┐  ┌───────────┐
-│  MariaDB   │  │   Redis   │
-│  (BD)      │  │  (Caché)  │
-│  :3306     │  │  :6379    │
-└────────────┘  └───────────┘
-```
+(Diagrama adjunto en el pdf)
 
 ### Redes
 
